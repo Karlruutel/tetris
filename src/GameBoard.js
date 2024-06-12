@@ -1,13 +1,22 @@
 import { OBlock } from "./OBlock.js";
 import { LBlock } from "./LBlock.js";
+import { JBlock } from "./JBlock.js";
+import { IBlock } from "./IBlock.js";
+import { SBlock } from "./SBlock.js";
+import { ZBlock } from "./ZBlock.js";
+import { TBlock } from "./TBlock.js";
 
 class GameBoard {
-    
+
+    allBlocks = [OBlock, LBlock, JBlock, IBlock, SBlock, ZBlock, TBlock];
+
     state = [];
     gameBoardTable = document.getElementById('gameboard');
+    nextBoardTable = document.getElementById('next-block');
     boardSizeX;
     boardSizeY;
     currentBlock;
+    nextBlock;
 
     constructor ( boardSizeX, boardSizeY ) {
 
@@ -22,15 +31,20 @@ class GameBoard {
             this.state.push(arr);
         }
 
+        console.log(this.state);
+
         document.addEventListener ('keydown', e => {
             switch ( e.key ) {
                 case 'ArrowUp':
                     this.currentBlock.nextPose();
                     this.draw();
                     break;
-                // case 'ArrowDown':
-                //     direction = 'd';
-                //     break;
+                case 'ArrowDown':
+                    if ( this.currentBlock.canGoDown(this.state) ) {
+                        this.currentBlock.moveDown();
+                        this.draw();
+                    }
+                    break;
                 case 'ArrowLeft':
                     if ( this.currentBlock.canGoLeft(this.state) ) {
                         this.currentBlock.moveLeft();
@@ -47,7 +61,7 @@ class GameBoard {
         });
     }
 
-    draw() {
+    draw () {
 
         this.gameBoardTable.innerHTML = '';
         
@@ -78,6 +92,32 @@ class GameBoard {
         // scoreDiv.innerText = 'Score: ' + score;
     }
 
+    addNextBlock () {
+        
+        this.nextBoardTable.innerHTML = '';
+
+        const width = this.nextBlock.calculateWidth();
+        const height = this.nextBlock.calculateHeight();
+
+        for ( let y = 0; y < height; y++ ) {
+            const boardRowTr = document.createElement('tr');
+            for ( let x = 0; x < width; x++ ) {
+                const boardCellTd = document.createElement('td');
+
+                this.nextBlock.shape[0].forEach( el => {
+                    if ( el[0] == y && el[1] == x ) {
+                        boardCellTd.classList.add(this.nextBlock.class);
+                    }
+                });
+
+                boardRowTr.append(boardCellTd);
+            }
+
+            this.nextBoardTable.append(boardRowTr);
+        }
+
+    }
+
     getState () {
         return this.state;
     }
@@ -87,7 +127,17 @@ class GameBoard {
     }
 
     addNewBlock() {
-        this.currentBlock = new LBlock(this.boardSizeX, this.boardSizeY);
+        
+        if ( this.nextBlock == undefined ) {
+            const i = Math.floor(Math.random() * 7);
+            this.currentBlock = new this.allBlocks[i](this.boardSizeX, this.boardSizeY);
+        } else { 
+            this.currentBlock = this.nextBlock;
+        }
+
+        const i = Math.floor(Math.random() * 7);
+        this.nextBlock = new this.allBlocks[i](this.boardSizeX, this.boardSizeY);
+
     }
 
     addBlockToState ( block ) {
@@ -98,6 +148,23 @@ class GameBoard {
         });
 
     }
+
+    checkRows () {
+
+        for ( let i = 0; i < this.boardSizeY; i++ ) {
+        
+            const row = this.state[i];
+            const c = row.filter( cell => cell == '' ).length;
+
+            if ( c == 0 ) {
+                this.state.splice(i, 1);
+                this.state.unshift(new Array(this.boardSizeX).fill(''));
+            }
+
+        }
+
+    }
+
 }
 
 export { GameBoard }
